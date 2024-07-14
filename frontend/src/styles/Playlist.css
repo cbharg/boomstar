@@ -1,0 +1,61 @@
+.playlist-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .playlist-header {
+    color: #333;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .playlist-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .playlist-item {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    padding: 10px 15px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .playlist-item:hover {
+    background-color: #e9ecef;
+  }
+  
+  .playlist-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  
+  .playlist-link:hover {
+    text-decoration: underline;
+  }
+  
+  .create-playlist-button {
+    display: inline-block;
+    background-color: #28a745;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .create-playlist-button:hover {
+    background-color: #218838;
+  }
+  
+  .empty-playlist-message {
+    color: #6c757d;
+    font-style: italic;
+  } 
