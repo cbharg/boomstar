@@ -1,16 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, SkipForward, SkipBack } from 'lucide-react';
 
-const MusicPlayer = ({ currentTrack }) => {
+const MusicPlayer = ({ currentTrack, onNext, onPrevious }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef(new Audio(currentTrack?.url));
+  const [error, setError] = useState('');
+  const audioRef = useRef(new Audio());
 
   useEffect(() => {
     if (currentTrack) {
       audioRef.current.src = currentTrack.url;
       audioRef.current.load();
       setIsPlaying(true);
-      audioRef.current.play();
+      audioRef.current.play().catch(err => {
+        console.error('Error playing audio:', err);
+        setError('Failed to play the track. Please try again.');
+        setIsPlaying(false);
+      });
     }
   }, [currentTrack]);
 
@@ -18,7 +23,10 @@ const MusicPlayer = ({ currentTrack }) => {
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play();
+      audioRef.current.play().catch(err => {
+        console.error('Error playing audio:', err);
+        setError('Failed to play the track. Please try again.');
+      });
     }
     setIsPlaying(!isPlaying);
   };
@@ -31,13 +39,13 @@ const MusicPlayer = ({ currentTrack }) => {
           <p className="text-sm text-gray-600">{currentTrack?.artist || 'Unknown artist'}</p>
         </div>
         <div className="flex items-center space-x-4">
-          <button className="p-2 rounded-full bg-blue-500 text-white">
+          <button onClick={onPrevious} className="p-2 rounded-full bg-blue-500 text-white" disabled={!onPrevious}>
             <SkipBack size={20} />
           </button>
-          <button onClick={togglePlayPause} className="p-2 rounded-full bg-blue-500 text-white">
+          <button onClick={togglePlayPause} className="p-2 rounded-full bg-blue-500 text-white" disabled={!currentTrack}>
             {isPlaying ? <Pause size={20} /> : <Play size={20} />}
           </button>
-          <button className="p-2 rounded-full bg-blue-500 text-white">
+          <button onClick={onNext} className="p-2 rounded-full bg-blue-500 text-white" disabled={!onNext}>
             <SkipForward size={20} />
           </button>
         </div>
@@ -45,8 +53,9 @@ const MusicPlayer = ({ currentTrack }) => {
       <div className="bg-gray-200 h-1 rounded-full">
         <div className="bg-blue-500 h-1 rounded-full w-1/2"></div>
       </div>
+      {error && <p className="text-red-500 mt-2">{error}</p>}
     </div>
   );
 };
 
-export default MusicPlayer; 
+export default MusicPlayer;

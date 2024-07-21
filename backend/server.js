@@ -3,8 +3,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const playlistRoutes = require('./routes/playlists');
 const songRoutes = require('./routes/songs');
-const authMiddleware = require('./middleware/authMiddleware');
+const { protect } = require('./middleware/authMiddleware');
 const authRoutes = require('./routes/auth');
+const seedDatabase = require('./utils/databaseSeed');
 
 require('dotenv').config();
 require('./models/Song');
@@ -22,27 +23,32 @@ app.use('/api/songs', songRoutes);
 app.use('/api/auth',authRoutes);
 
 // Add this new route for testing authentication
-app.get('/api/test-auth', authMiddleware, (req, res) => {
+app.get('/api/test-auth', protect, (req, res) => {
   res.json({ message: 'You are authenticated!', userId: req.user.id });
 });
 
-// Connect to MongoDB (you'll need to set up your MONGODB_URI in .env file)
+// Connect to MongoDB and seed if necessary
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('MongoDB connected'))
+.then(() => {
+  console.log('MongoDB connected');
+  if (process.argv.includes('--seed')) {
+    seedDatabase();
+  }
+})
 .catch(err => {
   console.error('MongoDB connection error:', err);
-  console.error('MongoDB URI: process.env.MONGODB_URI');
-  console.error('Full error object:', JSON.stringify(err,null, 2));
+  console.error('MongoDB URI:', process.env.MONGODB_URI);
+  console.error('Full error object:', JSON.stringify(err, null, 2));
 });
 
 // Basic route
 app.get('/', (req, res) => {
-  res.send('Fanrise Music Platform API');
+  res.send('Dumdum Platform API');
 });
-
+  
 //Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -52,4 +58,4 @@ app.use((err, req, res, next) => {
 //start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-}); 
+});

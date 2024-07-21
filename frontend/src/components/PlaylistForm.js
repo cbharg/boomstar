@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
+import ErrorMessage from './ErrorMessage';
+import LoadingIndicator from './LoadingIndicator';
 
 const PlaylistForm = ({ playlist, isEditing, onEditComplete }) => {
   const [formData, setFormData] = useState({
@@ -48,7 +50,7 @@ const PlaylistForm = ({ playlist, isEditing, onEditComplete }) => {
   return (
     <form onSubmit={onSubmit}>
       <h2>{isEditing ? 'Edit Playlist' : 'Create New Playlist'}</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <ErrorMessage message={error} />}
       <div>
         <label htmlFor="name">Playlist Name:</label>
         <input
@@ -58,6 +60,7 @@ const PlaylistForm = ({ playlist, isEditing, onEditComplete }) => {
           value={formData.name}
           onChange={onChange}
           required
+          disabled={isSubmitting}
         />
       </div>
       <div>
@@ -67,13 +70,14 @@ const PlaylistForm = ({ playlist, isEditing, onEditComplete }) => {
           name="description"
           value={formData.description}
           onChange={onChange}
+          disabled={isSubmitting}
         />
       </div>
       <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Saving...' : (isEditing ? 'Update' : 'Create')} Playlist
+        {isSubmitting ? <LoadingIndicator /> : (isEditing ? 'Update' : 'Create')} Playlist
       </button>
       {isEditing && (
-        <button type="button" onClick={onEditComplete}>Cancel</button>
+        <button type="button" onClick={onEditComplete} disabled={isSubmitting}>Cancel</button>
       )}
     </form>
   );

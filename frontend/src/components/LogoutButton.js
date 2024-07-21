@@ -1,26 +1,35 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiService from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import ErrorMessage from './ErrorMessage';
+import LoadingIndicator from './LoadingIndicator';
 
 const LogoutButton = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogout = async () => {
+    setIsLoading(true);
+    setError('');
     try {
-      apiService.logout();
-      // Clear any additional app state here if needed
+      await logout();
       navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
       setError('Logout failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div>
-      <button onClick={handleLogout}>Logout</button>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <button onClick={handleLogout} disabled={isLoading}>
+        {isLoading ? <LoadingIndicator /> : 'Logout'}
+      </button>
+      {error && <ErrorMessage message={error} />}
     </div>
   );
 };

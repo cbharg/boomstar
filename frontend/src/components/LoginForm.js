@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ErrorMessage from './ErrorMessage';
+import LoadingIndicator from './LoadingIndicator';
 import './LoginForm.css';
 
 const LoginForm = () => {
@@ -39,7 +41,7 @@ const LoginForm = () => {
 
   return (
     <form onSubmit={onSubmit} className="login-form">
-      {error && <p className="error-message">{error}</p>}
+      {error && <ErrorMessage message={error} />}
       <div className="input-group">
         <label htmlFor="email">Email Address</label>
         <input
@@ -50,6 +52,7 @@ const LoginForm = () => {
           value={email}
           onChange={onChange}
           required
+          disabled={isLoading}
         />
       </div>
       <div className="input-group">
@@ -63,10 +66,11 @@ const LoginForm = () => {
           onChange={onChange}
           minLength="6"
           required
+          disabled={isLoading}
         />
       </div>
       <button type="submit" disabled={isLoading} className="login-button">
-        {isLoading ? 'Logging in...' : 'Login'}
+        {isLoading ? <LoadingIndicator /> : 'Login'}
       </button>
     </form>
   );

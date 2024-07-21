@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiService from '../services/api';
+import ErrorMessage from './ErrorMessage';
+import LoadingIndicator from './LoadingIndicator';
 import '../styles/Playlist.css';
 
 const PlaylistList = ({ setCurrentTrack }) => {
@@ -31,11 +33,12 @@ const PlaylistList = ({ setCurrentTrack }) => {
       }
     } catch (err) {
       console.error('Failed to play first song:', err);
+      setError('Failed to play the first song. Please try again.');
     }
   };
 
-  if (loading) return <div className="playlist-container">Loading playlists...</div>;
-  if (error) return <div className="playlist-container">{error}</div>;
+  if (loading) return <LoadingIndicator />;
+  if (error) return <ErrorMessage message={error} />;
 
   return (
     <div className="playlist-container">

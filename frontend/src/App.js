@@ -5,11 +5,13 @@ import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
+import NavMenu from './components/NavMenu';
 import PlaylistList from './components/PlaylistList';
 import PlaylistForm from './components/PlaylistForm';
 import PlaylistDetail from './components/PlaylistDetail';
 import MusicPlayer from './components/MusicPlayer';
 import './styles/Playlist.css'
+import SongList from './components/SongList';
 
 function App() {
   const [currentTrack, setCurrentTrack] = useState(null);
@@ -19,6 +21,7 @@ function App() {
       <Router>
         <div className="App">
           <h1>Fanrise Music Platform</h1>
+          <NavMenu />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<RegistrationForm />} />
@@ -30,6 +33,7 @@ function App() {
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/songs" element={<SongList setCurrentTrack={setCurrentTrack} />} />
               {/* Add more protected routes here as needed */}
             </Route>
           </Routes>

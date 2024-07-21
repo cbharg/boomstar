@@ -1,3 +1,5 @@
+// Note: 'api' is assumed to be an Axios instance available in the broader scope
+// createErrorObject is assumed to be defined or imported elsewhere
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api'; // Adjust this URL to match your backend
@@ -56,7 +58,35 @@ api.interceptors.response.use(
   }
 );
 
+const createErrorObject = (message, statusCode, details = null) => ({
+  message,
+  statusCode,
+  details,
+});
+
+export const getPaginatedSongs = async (page = 1, limit = 10) => {
+  try {
+    console.log(`Calling API: ${API_URL}/songs?page=${page}&limit=${limit}`);
+    const response = await axios.get(`${API_URL}/songs?page=${page}&limit=${limit}`);
+    console.log('API response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('API error:', error);
+    if (error.response) {
+      console.error('Error response:', error.response.data);
+      throw new Error(`API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+    } else if (error.request) {
+      console.error('No response received:', error.request);
+      throw new Error('No response received from the server');
+    } else {
+      console.error('Error setting up request:', error.message);
+      throw new Error(`Request setup error: ${error.message}`);
+    }
+  }
+};
+
 const apiService = {
+  getPaginatedSongs,
   setAuthToken: (token) => {
     if (token) {
       const fullToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
@@ -74,19 +104,32 @@ const apiService = {
 
   register: async (userData) => {
     try {
-      // Debug: Log registration attempt
       console.log('Attempting registration with data:', userData);
       const response = await api.post('/auth/register', userData);
-      // Debug: Log successful registration
       console.log('Registration successful:', response.data);
+      if (!response.data.token) {
+        throw new Error('No token received from server');
+      }
       return response.data;
     } catch (error) {
-      // Debug: Log registration error
       console.error('Registration failed:', error);
-      throw error.response ? error.response.data : error.message;
+      if (error.response) {
+        console.error('Server responded with:', error.response.data);
+        throw createErrorObject(
+          error.response.data.message || 'Failed to Register. Please try again.',
+          error.response.status,
+          error.response.data
+        );
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+        throw createErrorObject('No response from server. Please try again.', 500);
+      } else {
+        console.error('Error setting up request:', error.message);
+        throw createErrorObject('Error setting up request. Please try again.', 500);
+      }
     }
   },
-
+  
   login: async (email, password) => {
     try {
       // Debug: Log login attempt
@@ -101,7 +144,11 @@ const apiService = {
     } catch (error) {
       // Debug: Log login error
       console.error('Login failed:', error);
-      throw error.response ? error.response.data : error.message;
+      throw createErrorObject(
+        'Failed to Login. Please try again.',
+        error.response?.status,
+        error.response?.data
+      );
     }
   },
 
@@ -116,7 +163,11 @@ const apiService = {
     } catch (error) {
       // Debug: Log user data fetch error
       console.error('Failed to fetch user data:', error);
-      throw error.response ? error.response.data : error.message;
+      throw createErrorObject(
+        'Failed to fetch user data. Please try again.',
+        error.response?.status || 500,
+        error.response?.data
+      );
     }
   },
 
@@ -129,7 +180,7 @@ const apiService = {
   //method to check if the token is present and valid
   isAuthenticated: () => {
     const token = localStorage.getItem('userToken');
-    return!!token; //Returns true if token exists, false otherwise
+    return !!token; //Returns true if token exists, false otherwise
   },
 
   //method to get the token (if needed elsewhere in the app)
@@ -145,7 +196,11 @@ const apiService = {
       return response.data;
     } catch (error) {
       console.error('Failed to create playlist:', error);
-      throw error.response ? error.response.data : error.message;
+      throw createErrorObject(
+        'Failed to create playlist. Please try again.',
+        error.response?.status,
+        error.response?.data
+      );
     }
   },
 
@@ -155,7 +210,11 @@ const apiService = {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch user playlists:', error);
-      throw error.response ? error.response.data : error.message;
+      throw createErrorObject(
+        'Failed to fetch user playlists, Please try again.',
+        error.response?.status,
+        error.response?.data
+      );
     }
   },
 
@@ -165,7 +224,11 @@ const apiService = {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch playlist:', error);
-      throw error.response ? error.response.data : error.message;
+      throw createErrorObject(
+        'Failed to fetch playlist. Please try again.',
+        error.response?.status,
+        error.response?.data
+      );
     }
   },
 
@@ -184,7 +247,11 @@ const apiService = {
       } else {
         console.error('Error setting up request:', error.message);
       }
-      throw error.response ? error.response.data : error.message;
+      throw createErrorObject(
+        'Failed to update playlist. Please try again.',
+        error.response?.status,
+        error.response?.data
+      );
     }
   },
 
@@ -194,7 +261,11 @@ const apiService = {
       return response.data;
     } catch (error) {
       console.error('Failed to delete playlist:', error);
-      throw error.response ? error.response.data : error.message;
+      throw createErrorObject(
+        'Failed to delete playlist. Please try again.',
+        error.response?.status,
+        error.response?.data
+      );
     }
   },
 
@@ -205,7 +276,11 @@ const apiService = {
       return response.data;
     } catch (error) {
       console.error('Auth test failed:', error);
-      throw error.response ? error.response.data : error.message;
+      throw createErrorObject(
+        'Auth test failed. Please try again.',
+        error.response?.status,
+        error.response?.data
+      );
     }
   },
 
@@ -215,7 +290,11 @@ const apiService = {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch songs:', error);
-      throw error.response ? error.response.data : error.message;
+      throw createErrorObject(
+        'Failed to fetch songs. Please try again.',
+        error.response?.status,
+        error.response?.data
+      );
     }
   },
 
@@ -225,7 +304,11 @@ const apiService = {
       return response.data;
     } catch (error) {
       console.error('Failed to add song to playlist:', error);
-      throw error.response ? error.response.data : error.message;
+      throw createErrorObject(
+        'Failed to add song to playlist. Please try again.',
+        error.response?.status,
+        error.response?.data
+      );
     }
   },
 
@@ -235,9 +318,14 @@ const apiService = {
       return response.data;
     } catch (error) {
       console.error('Failed to remove song from playlist:', error);
-      throw error.response ? error.response.data : error.message;
+      throw createErrorObject(
+        'Failed to remove song from playlist. Please try again.',
+        error.response?.status,
+        error.response?.data
+      );
     }
   },
 };
+
 
 export default apiService;

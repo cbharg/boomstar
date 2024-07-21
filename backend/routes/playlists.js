@@ -1,14 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 const Playlist = require('../models/Playlist');
 const { check, validationResult } = require('express-validator');
 
 // @route   POST api/playlists
 // @desc    Create a new playlist
 // @access  Private
-router.post('/', [
-  authMiddleware,
+router.post('/', protect, [
   check('name', 'Name is required').not().isEmpty(),
   check('description', 'Description is required').not().isEmpty()
 ], async (req, res) => {
@@ -37,7 +36,7 @@ router.post('/', [
 // @route   GET api/playlists
 // @desc    Get all playlists for a user
 // @access  Private
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     console.log(`Fetching playlists for user ${req.user.id}`);
     const playlists = await Playlist.find({ user: req.user.id }).sort({ createdAt: -1 });
@@ -52,8 +51,7 @@ router.get('/', authMiddleware, async (req, res) => {
 // @route   GET api/playlists/:id
 // @desc    Get a specific playlist
 // @access  Private
-router.get('/:id', [
-  authMiddleware,
+router.get('/:id', protect, [
   check('id', 'Invalid playlist ID').isMongoId()
 ], async (req, res) => {
   const errors = validationResult(req);
@@ -87,8 +85,7 @@ router.get('/:id', [
 // @route   PUT api/playlists/:id
 // @desc    Update a playlist
 // @access  Private
-router.put('/:id', [
-  authMiddleware,
+router.put('/:id', protect, [
   check('id', 'Invalid playlist ID').isMongoId(),
   check('name', 'Name is required').optional().not().isEmpty(),
   check('description', 'Description is required').optional().not().isEmpty()
@@ -129,8 +126,7 @@ router.put('/:id', [
 // @route   DELETE api/playlists/:id
 // @desc    Delete a playlist
 // @access  Private
-router.delete('/:id', [
-  authMiddleware,
+router.delete('/:id', protect, [
   check('id', 'Invalid playlist ID').isMongoId()
 ], async (req, res) => {
   const errors = validationResult(req);
@@ -163,8 +159,7 @@ router.delete('/:id', [
 });
 
 // Add song to playlist
-router.post('/:id/songs', [
-  authMiddleware,
+router.post('/:id/songs', protect, [
   check('id', 'Invalid playlist ID').isMongoId(),
   check('songId', 'Song ID is required').not().isEmpty().isMongoId()
 ], async (req, res) => {
@@ -199,8 +194,7 @@ router.post('/:id/songs', [
 });
 
 // Remove song from playlist
-router.delete('/:id/songs/:songId', [
-  authMiddleware,
+router.delete('/:id/songs/:songId', protect, [
   check('id', 'Invalid playlist ID').isMongoId(),
   check('songId', 'Invalid song ID').isMongoId()
 ], async (req, res) => {

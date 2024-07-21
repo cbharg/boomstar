@@ -1,33 +1,35 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import apiService from '../services/api';
 import LogoutButton from './LogoutButton';
 import PlaylistList from './PlaylistList';
+import ErrorMessage from './ErrorMessage';
+import LoadingIndicator from './LoadingIndicator';
 
 const Dashboard = () => {
-  const [userData, setUserData] = useState(null);
+  const { isAuthenticated, user } = useAuth();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [authTestResult, setAuthTestResult] = useState(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
-      try {
-        const data = await apiService.getUserData();
-        setUserData(data);
-      } catch (error) {
-        console.error('Failed to fetch user data:', error);
-        setError('Failed to load user data. Please try again later.');
-      } finally {
+      if (isAuthenticated()) {
+        try {
+          await apiService.getUserData(); // This should update the user in AuthContext
+        } catch (error) {
+          console.error('Failed to fetch user data:', error);
+          setError('Failed to load user data. Please try again later.');
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
         setIsLoading(false);
       }
     };
 
-    if (apiService.isAuthenticated()) {
-      fetchUserData();
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
+    fetchUserData();
+  }, [isAuthenticated]);
 
   const handleTestAuth = async () => {
     try {
@@ -39,22 +41,22 @@ const Dashboard = () => {
     }
   };
 
-  if (!apiService.isAuthenticated()) {
+  if (!isAuthenticated()) {
     return <div>Please log in to view this page.</div>;
   }
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <LoadingIndicator />;
   }
 
   return (
     <div>
       <h1>Welcome to your Dashboard</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {userData ? (
+      {error && <ErrorMessage message={error} />}
+      {user ? (
         <div>
-          <p>Username: {userData.username}</p>
-          <p>Email: {userData.email}</p>
+          <p>Username: {user.username}</p>
+          <p>Email: {user.email}</p>
           {/* Add more user data fields as needed */}
         </div>
       ) : (

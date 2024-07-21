@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Song = require('../models/Song');
-const authMiddleware = require('../middleware/authMiddleware');
+const { getPaginatedSongs, getSongById, createSong, updateSong, deleteSong } = require('../controllers/songController');//other functions will be implemented in near future so lets keep them
+const { protect } = require('../middleware/authMiddleware');
 const {
   checkValidationErrors,
   searchValidation,
@@ -10,8 +11,11 @@ const {
   deleteSongValidation
 } = require('../middleware/songValidation');
 
+// Get paginated songs
+router.get('/', getPaginatedSongs);
+
 // Get all songs
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const songs = await Song.find();
     res.json(songs);
@@ -21,10 +25,8 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// @route   GET api/songs/search
-// @desc    Search for songs
-// @access  Private
-router.get('/search', authMiddleware, searchValidation, checkValidationErrors, async (req, res) => {
+// Search for songs
+router.get('/search', protect, searchValidation, checkValidationErrors, async (req, res) => {
   try {
     const { query } = req.query;
     const songs = await Song.find({
@@ -42,14 +44,19 @@ router.get('/search', authMiddleware, searchValidation, checkValidationErrors, a
 });
 
 // Add a new song
-router.post('/', authMiddleware, createSongValidation, checkValidationErrors, async (req, res) => {
+router.post('/', protect, createSongValidation, checkValidationErrors, async (req, res) => {
   try {
-    const { title, artist, album, year } = req.body;
+    const { title, artist, album, genre, duration, releaseYear, audioUrl, coverImageUrl } = req.body;
     const newSong = new Song({
       title,
       artist,
       album,
-      year
+      genre,
+      duration,
+      releaseYear,
+      audioUrl,
+      coverImageUrl,
+      createdBy: req.user.id
     });
     const song = await newSong.save();
     res.json(song);
@@ -59,13 +66,27 @@ router.post('/', authMiddleware, createSongValidation, checkValidationErrors, as
   }
 });
 
-// UPDATE route for songs
-router.put('/:id', authMiddleware, updateSongValidation, checkValidationErrors, async (req, res) => {
+// Get a single song by ID
+router.get('/:id', async (req, res) => {
   try {
-    const { title, artist, album, year } = req.body;
+    const song = await Song.findById(req.params.id);
+    if (!song) {
+      return res.status(404).json({ message: 'Song not found' });
+    }
+    res.json(song);
+  } catch (err) {
+    console.error('Error fetching song:', err);
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+});
+
+// Update a song
+router.put('/:id', protect, updateSongValidation, checkValidationErrors, async (req, res) => {
+  try {
+    const { title, artist, album, genre, duration, releaseYear, audioUrl, coverImageUrl } = req.body;
     const updatedSong = await Song.findByIdAndUpdate(
       req.params.id,
-      { title, artist, album, year },
+      { title, artist, album, genre, duration, releaseYear, audioUrl, coverImageUrl },
       { new: true, runValidators: true }
     );
 
@@ -80,8 +101,8 @@ router.put('/:id', authMiddleware, updateSongValidation, checkValidationErrors, 
   }
 });
 
-// DELETE route for songs
-router.delete('/:id', authMiddleware, deleteSongValidation, checkValidationErrors, async (req, res) => {
+// Delete a song
+router.delete('/:id', protect, deleteSongValidation, checkValidationErrors, async (req, res) => {
   try {
     const deletedSong = await Song.findByIdAndDelete(req.params.id);
 

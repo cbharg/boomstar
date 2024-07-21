@@ -33,10 +33,40 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await apiService.login(email, password);
       setUser(data.user);
+      localStorage.setItem('token', data.token);
       return { success: true };
     } catch (error) {
       console.error('Login failed:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Error status:', error.response.status);
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
       return { success: false, error: error.response?.data?.message || 'Login failed' };
+    }
+  };
+
+  const register = async (email, password) => {
+    try {
+      const data = await apiService.register(email, password);
+      setUser(data.user);
+      localStorage.setItem('token', data.token);
+      return { success: true };
+    } catch (error) {
+      console.error('Registration failed:', error);
+      // More detailed error logging
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Error status:', error.response.status);
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      return { success: false, error: error.response?.data?.message || 'Registration failed' };
     }
   };
 
@@ -46,7 +76,9 @@ export const AuthProvider = ({ children }) => {
 
   const contextValue = {
     user,
+    setUser,
     login,
+    register,
     logout,
     loading,
     loadUser,

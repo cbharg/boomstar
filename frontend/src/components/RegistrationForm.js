@@ -1,8 +1,9 @@
- 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiService from '../services/api';
+import ErrorMessage from './ErrorMessage';
+import LoadingIndicator from './LoadingIndicator';
 import './RegistrationForm.css';
 
 const RegistrationForm = () => {
@@ -15,7 +16,7 @@ const RegistrationForm = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { setUser } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -24,17 +25,28 @@ const RegistrationForm = () => {
     });
   };
 
+  const validatePassword = (password) => {
+    const regex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+    return regex.test(password);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-
+  
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords don't match");
       setIsLoading(false);
       return;
     }
 
+    if (!validatePassword(formData.password)) {
+      setError('Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.');
+      setIsLoading(false);
+      return;
+    }
+  
     try {
       const response = await apiService.register({
         username: formData.username,
@@ -43,13 +55,43 @@ const RegistrationForm = () => {
       });
       
       if (response.token) {
-        await login(formData.email, formData.password);
+        // Store the token
+        localStorage.setItem('token', response.token);
+        
+        // If user data is included in the response, update the user state
+        if (response.user) {
+          setUser(response.user);
+        } else {
+          // If user data is not included, we might need to fetch it
+          const userData = await apiService.getUserData(response.token);
+          setUser(userData);
+        }
+        
         navigate('/dashboard');
       } else {
         throw new Error('Registration successful, but no token received');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'An error occurred during registration');
+      console.error('Registration error:', err);
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        if (err.response.data && err.response.data.message) {
+          setError(err.response.data.message);
+        } else if (err.response.status === 400) {
+          setError('Invalid registration data. Please check your inputs and try again.');
+        } else if (err.response.status === 409) {
+          setError('Username or email already exists. Please choose a different one.');
+        } else {
+          setError(`Registration failed. Please try again.`);
+        }
+      } else if (err.request) {
+        // The request was made but no response was received
+        setError('No response from server. Please check your internet connection and try again.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +100,7 @@ const RegistrationForm = () => {
   return (
     <form onSubmit={handleSubmit} className="registration-form">
       <h2>Register</h2>
-      {error && <p className="error-message">{error}</p>}
+      {error && <ErrorMessage message={error} />}
       <div className="input-group">
         <label htmlFor="username">Username:</label>
         <input
@@ -68,6 +110,7 @@ const RegistrationForm = () => {
           value={formData.username}
           onChange={handleChange}
           required
+          disabled={isLoading}
         />
       </div>
       <div className="input-group">
@@ -79,6 +122,7 @@ const RegistrationForm = () => {
           value={formData.email}
           onChange={handleChange}
           required
+          disabled={isLoading}
         />
       </div>
       <div className="input-group">
@@ -90,6 +134,7 @@ const RegistrationForm = () => {
           value={formData.password}
           onChange={handleChange}
           required
+          disabled={isLoading}
         />
       </div>
       <div className="input-group">
@@ -101,10 +146,11 @@ const RegistrationForm = () => {
           value={formData.confirmPassword}
           onChange={handleChange}
           required
+          disabled={isLoading}
         />
       </div>
       <button type="submit" disabled={isLoading} className="register-button">
-        {isLoading ? 'Registering...' : 'Register'}
+        {isLoading ? <LoadingIndicator /> : 'Register'}
       </button>
     </form>
   );

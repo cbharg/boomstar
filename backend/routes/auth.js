@@ -4,9 +4,16 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const authMiddleware = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 
 console.log('auth.js is loaded');
+
+function validatePassword(password) {
+  const regex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/;
+  console.log('Password being validated:', password);
+  console.log('Regex test result:', regex.test(password));
+  return regex.test(password);
+}
 
 // Registration route
 router.post(
@@ -15,14 +22,21 @@ router.post(
     check('username', 'Username is required').not().isEmpty()
       .isLength({ min: 3, max: 30 }).withMessage('Username must be between 3 and 30 characters'),
     check('email', 'Please include a valid email').isEmail(),
-    check('password', 'Password must be at least 6 characters').isLength({ min: 6 })
-      .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/, "i")
-      .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number and one special character')
+    check('password')
+      .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+      .custom((value) => {
+        if (!validatePassword(value)) {
+          throw new Error('Password must contain at least one uppercase letter, one lowercase letter, one number and one special character');
+        }
+        return true;
+      })
   ],
   async (req, res) => {
+    console.log('Registration attempt:', req.body);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      console.log('Validation errors:', errors.array());
+      return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
     }
 
     const { username, email, password } = req.body;
@@ -31,6 +45,7 @@ router.post(
       // Check if user already exists
       let user = await User.findOne({ $or: [{ email }, { username }] });
       if (user) {
+        console.log('User already exists:', { email, username });
         return res.status(400).json({ message: 'User with this email or username already exists' });
       }
 
@@ -48,10 +63,29 @@ router.post(
       // Save user to database
       await user.save();
 
-      res.status(201).json({ message: 'User registered successfully' });
+      // Generate JWT
+      const payload = {
+        user: {
+          id: user.id
+        }
+      };
+
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' },
+        (err, token) => {
+          if (err) {
+            console.error('JWT signing error:', err);
+            return res.status(500).json({ message: 'Error generating token' });
+          }
+          console.log('User registered successfully and JWT generated:', { email, username });
+          res.status(201).json({ token, message: 'User registered successfully' });
+        }
+      );
     } catch (err) {
-      console.error(err.message);
-      res.status(500).json({ message: 'Server error' });
+      console.error('Server error during registration:', err);
+      res.status(500).json({ message: 'Server error', error: err.message });
     }
   }
 );
@@ -134,7 +168,7 @@ router.post(
 );
 
 // New route to get user data
-router.get('/user', authMiddleware, async (req, res) => {
+router.get('/user', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     res.json(user);

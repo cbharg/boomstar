@@ -1,0 +1,170 @@
+  console.error
+    Warning: `ReactDOMTestUtils.act` is deprecated in favor of `React.act`. Import `act` from `react` instead of `react-dom/test-utils`. See https://react.dev/warnings/react-dom-test-utils for more info.
+
+    [0m [90m 20 |[39m
+     [90m 21 |[39m [36mconst[39m renderRegistrationForm [33m=[39m () [33m=>[39m {
+    [31m[1m>[22m[39m[90m 22 |[39m   [36mreturn[39m render(
+     [90m    |[39m                [31m[1m^[22m[39m
+     [90m 23 |[39m     [33m<[39m[33mRouter[39m[33m>[39m
+     [90m 24 |[39m       [33m<[39m[33mAuthProvider[39m[33m>[39m
+     [90m 25 |[39m         [33m<[39m[33mRegistrationForm[39m [33m/[39m[33m>[39m[0m
+
+      at printWarning (node_modules/react-dom/cjs/react-dom-test-utils.development.js:71:30)
+      at error (node_modules/react-dom/cjs/react-dom-test-utils.development.js:45:7)
+      at actWithWarning (node_modules/react-dom/cjs/react-dom-test-utils.development.js:1736:7)
+      at node_modules/@testing-library/react/dist/act-compat.js:63:25
+      at renderRoot (node_modules/@testing-library/react/dist/pure.js:159:26)
+      at render (node_modules/@testing-library/react/dist/pure.js:246:10)
+      at renderRegistrationForm (src/_tests_/auth.test.js:22:16)
+      at Object.<anonymous> (src/_tests_/auth.test.js:37:5)
+
+  console.error
+    Login failed: TypeError: Cannot read properties of undefined (reading 'user')
+        at login (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\src\context\AuthContext.js:35:20)
+        at processTicksAndRejections (node:internal/process/task_queues:95:5)
+        at handleSubmit (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\src\components\RegistrationForm.js:58:9)
+
+    [0m [90m 37 |[39m       [36mreturn[39m { success[33m:[39m [36mtrue[39m }[33m;[39m
+     [90m 38 |[39m     } [36mcatch[39m (error) {
+    [31m[1m>[22m[39m[90m 39 |[39m       console[33m.[39merror([32m'Login failed:'[39m[33m,[39m error)[33m;[39m
+     [90m    |[39m               [31m[1m^[22m[39m
+     [90m 40 |[39m       [36mif[39m (error[33m.[39mresponse) {
+     [90m 41 |[39m         console[33m.[39merror([32m'Error response:'[39m[33m,[39m error[33m.[39mresponse[33m.[39mdata)[33m;[39m
+     [90m 42 |[39m         console[33m.[39merror([32m'Error status:'[39m[33m,[39m error[33m.[39mresponse[33m.[39mstatus)[33m;[39m[0m
+
+      at login (src/context/AuthContext.js:39:15)
+      at handleSubmit (src/components/RegistrationForm.js:58:9)
+
+  console.error
+    Error message: Cannot read properties of undefined (reading 'user')
+
+    [0m [90m 44 |[39m         console[33m.[39merror([32m'Error request:'[39m[33m,[39m error[33m.[39mrequest)[33m;[39m
+     [90m 45 |[39m       } [36melse[39m {
+    [31m[1m>[22m[39m[90m 46 |[39m         console[33m.[39merror([32m'Error message:'[39m[33m,[39m error[33m.[39mmessage)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 47 |[39m       }
+     [90m 48 |[39m       [36mreturn[39m { success[33m:[39m [36mfalse[39m[33m,[39m error[33m:[39m error[33m.[39mresponse[33m?[39m[33m.[39mdata[33m?[39m[33m.[39mmessage [33m||[39m [32m'Login failed'[39m }[33m;[39m
+     [90m 49 |[39m     }[0m
+
+      at login (src/context/AuthContext.js:46:17)
+      at handleSubmit (src/components/RegistrationForm.js:58:9)
+
+(node:8368) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  console.error
+    Registration error: Error: Registration failed. Please try again.
+        at Object.<anonymous> (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\src\_tests_\auth.test.js:103:47)
+        at Promise.then.completed (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-circus\build\utils.js:391:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-circus\build\utils.js:316:10)
+        at _callCircusTest (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-circus\build\run.js:218:40)
+        at _runTest (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-circus\build\run.js:155:3)
+        at _runTestsForDescribeBlock (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-circus\build\run.js:66:9)
+        at _runTestsForDescribeBlock (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-circus\build\run.js:60:9)
+        at run (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-circus\build\run.js:25:3)
+        at runAndTransformResultsToJestFormat (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-circus\build\legacy-code-todo-rewrite\jestAdapterInit.js:170:21)
+        at jestAdapter (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-circus\build\legacy-code-todo-rewrite\jestAdapter.js:82:19)
+        at runTestInternal (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-runner\build\runTest.js:389:16)
+        at runTest (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-runner\build\runTest.js:475:34)
+        at Object.worker (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\node_modules\jest-runner\build\testWorker.js:133:12)
+
+    [0m [90m 62 |[39m       }
+     [90m 63 |[39m     } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 64 |[39m       console[33m.[39merror([32m'Registration error:'[39m[33m,[39m err)[33m;[39m
+     [90m    |[39m               [31m[1m^[22m[39m
+     [90m 65 |[39m       setError(err[33m.[39mresponse[33m?[39m[33m.[39mdata[33m?[39m[33m.[39mmessage [33m||[39m err[33m.[39mmessage [33m||[39m [32m'An error occurred during registration'[39m)[33m;[39m
+     [90m 66 |[39m     } [36mfinally[39m {
+     [90m 67 |[39m       setIsLoading([36mfalse[39m)[33m;[39m[0m
+
+      at handleSubmit (src/components/RegistrationForm.js:64:15)
+
+  console.error
+    Login failed: TypeError: Cannot read properties of undefined (reading 'user')
+        at login (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\src\context\AuthContext.js:35:20)
+        at handleSubmit (D:\Bhargav\boom\Fanrise\fanrise-project\frontend\src\components\RegistrationForm.js:58:9)
+
+    [0m [90m 37 |[39m       [36mreturn[39m { success[33m:[39m [36mtrue[39m }[33m;[39m
+     [90m 38 |[39m     } [36mcatch[39m (error) {
+    [31m[1m>[22m[39m[90m 39 |[39m       console[33m.[39merror([32m'Login failed:'[39m[33m,[39m error)[33m;[39m
+     [90m    |[39m               [31m[1m^[22m[39m
+     [90m 40 |[39m       [36mif[39m (error[33m.[39mresponse) {
+     [90m 41 |[39m         console[33m.[39merror([32m'Error response:'[39m[33m,[39m error[33m.[39mresponse[33m.[39mdata)[33m;[39m
+     [90m 42 |[39m         console[33m.[39merror([32m'Error status:'[39m[33m,[39m error[33m.[39mresponse[33m.[39mstatus)[33m;[39m[0m
+
+      at login (src/context/AuthContext.js:39:15)
+      at handleSubmit (src/components/RegistrationForm.js:58:9)
+
+  console.error
+    Error message: Cannot read properties of undefined (reading 'user')
+
+    [0m [90m 44 |[39m         console[33m.[39merror([32m'Error request:'[39m[33m,[39m error[33m.[39mrequest)[33m;[39m
+     [90m 45 |[39m       } [36melse[39m {
+    [31m[1m>[22m[39m[90m 46 |[39m         console[33m.[39merror([32m'Error message:'[39m[33m,[39m error[33m.[39mmessage)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 47 |[39m       }
+     [90m 48 |[39m       [36mreturn[39m { success[33m:[39m [36mfalse[39m[33m,[39m error[33m:[39m error[33m.[39mresponse[33m?[39m[33m.[39mdata[33m?[39m[33m.[39mmessage [33m||[39m [32m'Login failed'[39m }[33m;[39m
+     [90m 49 |[39m     }[0m
+
+      at login (src/context/AuthContext.js:46:17)
+      at handleSubmit (src/components/RegistrationForm.js:58:9)
+
+PASS src/_tests_/auth.test.js (10.792 s)
+  RegistrationForm
+    √ renders registration form (542 ms)
+    √ shows error when passwords do not match (111 ms)
+    √ shows error for weak password (48 ms)
+    √ calls api.register with correct data on valid submission (235 ms)
+    √ displays error message on registration failure (62 ms)
+    √ successful registration redirects user (47 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        25.975 s
+Ran all test suites related to changed files.
+
+A worker process has failed to exit gracefully and has been force exited. This is likely caused by tests leaking due to improper teardown. Try running with --detectOpenHandles to find leaks. Active timers can also cause this, ensure that .unref() was called on them.
+Test Suites: 0 of 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        5.806 s, estimated 11 s
+Test run was interrupted.
+
+Test Suites: 0 of 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        0.136 s, estimated 11 s
+Test run was interrupted.
+
+Test Suites: 0 of 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        0.135 s, estimated 11 s
+Test run was interrupted.
+
+A worker process has failed to exit gracefully and has been force exited. This is likely caused by tests leaking due to improper teardown. Try running with --detectOpenHandles to find leaks. Active timers can also cause this, ensure that .unref() was called on them.
+Test Suites: 0 of 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        0.595 s, estimated 11 s
+Test run was interrupted.
+
+Test Suites: 0 of 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        0.138 s, estimated 11 s
+Test run was interrupted.
+
+Test Suites: 0 of 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        0.123 s, estimated 11 s
+Test run was interrupted.
+
+Test Suites: 0 of 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        0.14 s, estimated 11 s
+Test run was interrupted.
+
+
