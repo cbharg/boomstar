@@ -64,28 +64,29 @@ router.post(
       await user.save();
 
       // Generate JWT
-      const payload = {
-        user: {
-          id: user.id
-        }
-      };
-
-      jwt.sign(
-        payload,
+      const accessToken = jwt.sign(
+        { user: { id: user.id } },
         process.env.JWT_SECRET,
-        { expiresIn: '24h' },
-        (err, token) => {
-          if (err) {
-            console.error('JWT signing error:', err);
-            return res.status(500).json({ message: 'Error generating token' });
-          }
-          console.log('User registered successfully and JWT generated:', { email, username });
-          res.status(201).json({ token, message: 'User registered successfully' });
-        }
+        { expiresIn: '15m' }
       );
+
+      // Generate Refresh Token
+      const refreshToken = jwt.sign(
+        { id: user.id },
+        process.env.REFRESH_TOKEN_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      console.log('User registered successfully and tokens generated:', { email, username });
+      res.status(201).json({ 
+        accessToken, 
+        refreshToken,
+        user: { id: user.id, name: user.username, email: user.email },
+        message: 'User registered successfully' 
+      });
     } catch (err) {
-      console.error('Server error during registration:', err);
-      res.status(500).json({ message: 'Server error', error: err.message });
+      console.error('Error generating tokens:', err);
+      res.status(500).json({ message: 'Error during registration' });
     }
   }
 );
@@ -134,28 +135,35 @@ router.post(
 
       console.log('Password matched');
 
-      // Generate JWT
-      const payload = {
+       // Generate JWT (Access Token)
+       const payload = {
         user: {
           id: user.id
         }
       };
 
       try {
-        jwt.sign(
+        const accessToken = jwt.sign(
           payload,
           process.env.JWT_SECRET,
-          { expiresIn: '1h' },
-          (err, token) => {
-            if (err) {
-              console.error('JWT signing error:', err);
-              return res.status(500).json({ message: 'Error generating token' });
-            }
-            console.log('JWT generated successfully');
-            console.log('Sending response with token:', { token });
-            res.json({ token, message: 'Login successful' });
-          }
+          { expiresIn: '15m' } // Access token expires in 15 minutes
         );
+
+        // Generate Refresh Token
+        const refreshToken = jwt.sign(
+          { id: user.id },
+          process.env.REFRESH_TOKEN_SECRET,
+          { expiresIn: '7d' } // Refresh token expires in 7 days
+        );
+
+        console.log('JWT and Refresh Token generated successfully');
+        console.log('Sending response with tokens');
+        res.json({ 
+          accessToken, 
+          refreshToken, 
+          user: { id: user.id, name: user.name, email: user.email },
+          message: 'Login successful' 
+        });
       } catch (error) {
         console.error('Unexpected error:', error);
         res.status(500).json({ message: 'Unexpected error occurred' });
@@ -166,6 +174,33 @@ router.post(
     }
   }
 );
+
+// Refresh Token route
+router.post('/refresh-token', async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'Refresh Token is required' });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const newAccessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '15m', // Token expires in 15 minutes
+    });
+
+    res.json({ token: newAccessToken });
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    res.status(403).json({ message: 'Invalid refresh token' });
+  }
+});
 
 // New route to get user data
 router.get('/user', protect, async (req, res) => {

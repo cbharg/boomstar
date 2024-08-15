@@ -15,7 +15,6 @@
    |-- routes
       |-- auth.js
       |-- playlists.js
-      |-- songRoutes.js
       |-- songs.js
       |-- user.js
       |-- userRoutes.js
@@ -23,6 +22,9 @@
       |-- clearDatabase.js
       |-- route-testing.js
    |-- utils
+      |-- cacheService.js
+      |-- createIndexes.js
+      |-- databaseSeed.js
       |-- errorHandler.js
    |-- .env
    |-- .gitignore
@@ -40,27 +42,38 @@
    |-- src
       |-- components
          |-- Dashboard.js
+         |-- ErrorBoundary.js
          |-- ErrorMessage.js
          |-- LoadingIndicator.js
          |-- LoginForm.css
          |-- LoginForm.js
          |-- LogoutButton.js
          |-- MusicPlayer.js
+         |-- MusicPlayerErrorBoundary.js
+         |-- NavMenu.js
          |-- PlaylistDetail.js
+         |-- PlaylistDetailErrorBoundary.js
          |-- PlaylistForm.js
          |-- PlaylistList.js
          |-- PlaylistSongManager.js
          |-- ProtectedRoute.js
          |-- RegistrationForm.css
          |-- RegistrationForm.js
+         |-- SearchInput.js
+         |-- SongList.js
+         |-- SongListErrorBoundary.js
       |-- context
          |-- AuthContext.js
+      |-- hooks
+         |-- useDebounce.js
       |-- services
          |-- api.js
       |-- styles
          |-- ErrorMessage.css
          |-- LoadingIndicator.css
+         |-- NavMenu.css
          |-- Playlist.css
+         |-- Song.css
       |-- _tests_
          |-- auth.test.js
       |-- App.css

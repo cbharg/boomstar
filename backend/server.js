@@ -6,6 +6,8 @@ const songRoutes = require('./routes/songs');
 const { protect } = require('./middleware/authMiddleware');
 const authRoutes = require('./routes/auth');
 const seedDatabase = require('./utils/databaseSeed');
+const connectDB = require('./config/db');
+const createIndexes = require('./utils/createIndexes');
 
 require('dotenv').config();
 require('./models/Song');
@@ -15,6 +17,21 @@ console.log('MONGODB_URI:', process.env.MONGODB_URI);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+connectDB()
+  .then(() => {
+    console.log('MongoDB connected');
+    createIndexes();
+    if (process.argv.includes('--seed')) {
+      seedDatabase();
+    }
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    console.error('MongoDB URI:', process.env.MONGODB_URI);
+    console.error('Full error object:', JSON.stringify(err, null, 2));
+  });
+
 
 app.use(cors());
 app.use(express.json());
@@ -58,4 +75,15 @@ app.use((err, req, res, next) => {
 //start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+//test route
+app.get('/api/test-user', protect, (req, res) => {
+  console.log('Test-user route hit');
+  console.log('User in request:', req.user);
+  res.json({ 
+    message: 'You are authenticated!', 
+    userId: req.user ? req.user.id : 'No user ID',
+    user: req.user || 'No user object'
+  });
 });

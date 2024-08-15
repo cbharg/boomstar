@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, SkipForward, SkipBack } from 'lucide-react';
+import MusicPlayerErrorBoundary from './MusicPlayerErrorBoundary';
 
 const MusicPlayer = ({ currentTrack, onNext, onPrevious }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -32,6 +33,7 @@ const MusicPlayer = ({ currentTrack, onNext, onPrevious }) => {
   };
 
   return (
+    <MusicPlayerErrorBoundary>
     <div className="bg-gray-100 p-4 rounded-lg shadow-md">
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -55,6 +57,7 @@ const MusicPlayer = ({ currentTrack, onNext, onPrevious }) => {
       </div>
       {error && <p className="text-red-500 mt-2">{error}</p>}
     </div>
+    </MusicPlayerErrorBoundary>
   );
 };
 

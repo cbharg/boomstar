@@ -23,18 +23,23 @@ const LoginForm = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
+    console.log('LoginForm: Submitting login form');
     try {
+      console.log('LoginForm: Calling login function');
       const result = await login(email, password);
+      console.log('LoginForm: Received result from login:', result);
       if (result.success) {
-        console.log('Login successful');
+        console.log('LoginForm: Login successful, navigating to dashboard');
         navigate('/dashboard');
       } else {
+        console.log('LoginForm: Login failed, setting error');
         setError(result.error || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setError('An error occurred during login. Please try again.');
+      console.error('LoginForm: Caught error:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
+      console.log('LoginForm: Setting isLoading to false');
       setIsLoading(false);
     }
   };

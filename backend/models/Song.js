@@ -1,46 +1,30 @@
-// models/Song.js
 const mongoose = require('mongoose');
 
 const SongSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
-    trim: true
+    index: true // Add index
   },
   artist: {
     type: String,
     required: true,
-    trim: true
+    index: true // Add index
   },
-  album: {
-    type: String,
-    trim: true
-  },
-  genre: {
-    type: String,
-    trim: true
-  },
-  duration: {
-    type: Number,
-    min: 0
-  },
-  releaseYear: {
-    type: Number,
-    min: 1900,
-    max: new Date().getFullYear()
-  },
-  audioUrl: {
-    type: String,
-    required: true
-  },
-  coverImageUrl: {
-    type: String
-  },
+  album: String,
+  genre: String,
+  duration: Number,
+  releaseYear: Number,
+  audioUrl: String,
+  coverImageUrl: String,
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   }
 }, { timestamps: true });
+
+// Compound index for title and artist
+SongSchema.index({ title: 1, artist: 1 });
 
 module.exports = mongoose.model('Song', SongSchema);

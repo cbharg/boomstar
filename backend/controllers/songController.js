@@ -1,6 +1,9 @@
 // controllers/songController.js
 const Song = require('../models/Song');
 const { createErrorObject } = require('../utils/errorHandler');
+const CacheService = require('../utils/cacheService');
+
+const cache = new CacheService(300); // Cache for 5 minutes
 
 // Create a new song
 exports.createSong = async (req, res) => {
@@ -33,25 +36,43 @@ exports.getPaginatedSongs = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const searchQuery = req.query.search || '';
+    const sortBy = req.query.sortBy || 'title';
+    const sortOrder = req.query.sortOrder === 'desc' ? -1 : 1;
     const skipIndex = (page - 1) * limit;
-    
-    const songs = await Song.find()
-      .sort({ title: 1 })
+
+    const cacheKey = `songs_${page}_${limit}_${searchQuery}_${sortBy}_${sortOrder}`;
+
+    const result = await cache.get(cacheKey, async () => {
+    let query = {};
+    if (searchQuery) {
+      query = {
+        $or: [
+          { title: { $regex: searchQuery, $options: 'i' } },
+          { artist: { $regex: searchQuery, $options: 'i' } }
+        ]
+      };
+    }
+
+    const songs = await Song.find(query)
+      .sort({ [sortBy]: sortOrder })
       .limit(limit)
       .skip(skipIndex)
       .exec();
 
-    const totalSongs = await Song.countDocuments();
+    const totalSongs = await Song.countDocuments(query);
     const totalPages = Math.ceil(totalSongs / limit);
 
-    res.json({
+    return {
       songs,
       currentPage: page,
       totalPages,
       totalSongs
+    };
     });
+    res.json(result);
   } catch (error) {
-    res.status(500).json(errorHandler(error, req));
+    res.status(500).json(createErrorObject('Failed to fetch songs', error));
   }
 };
 

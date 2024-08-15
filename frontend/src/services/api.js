@@ -8,52 +8,75 @@ const api = axios.create({
   baseURL: API_URL,
 });
 
-// Debug: Log configuration
-console.log('API Service initialized with base URL:', API_URL);
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('userToken');
+    const token = localStorage.getItem('accessToken');
     if (token) {
-      config.headers['Authorization'] = token; //token is stored with bearer prefix
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
-    // Debug: Log outgoing request
-    console.log('Outgoing Request:', {
-      method: config.method.toUpperCase(),
-      url: config.url,
-      headers: config.headers,
-      data: config.data,
-    });
     return config;
   },
   (error) => {
-    // Debug: Log request error
-    console.error('Request Error:', error);
     return Promise.reject(error);
   }
 );
 
-// Add response interceptor for debugging
 api.interceptors.response.use(
   (response) => {
-    // Debug: Log response
-    console.log('Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      data: response.data,
-    });
     return response;
   },
-  (error) => {
-    // Debug: Log response error
-    console.error('Response Error:', {
-      message: error.message,
-      response: error.response ? {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-      } : 'No response',
-    });
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({resolve, reject});
+        }).then(token => {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token;
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      return new Promise((resolve, reject) => {
+        const refreshToken = localStorage.getItem('refreshToken');
+        api.post('/auth/refresh-token', { refreshToken })
+          .then(({data}) => {
+            localStorage.setItem('accessToken', data.accessToken);
+            api.defaults.headers.common['Authorization'] = 'Bearer ' + data.accessToken;
+            originalRequest.headers['Authorization'] = 'Bearer ' + data.accessToken;
+            processQueue(null, data.accessToken);
+            resolve(api(originalRequest));
+          })
+          .catch((err) => {
+            processQueue(err, null);
+            reject(err);
+          })
+          .finally(() => {
+            isRefreshing = false;
+          });
+      });
+    }
+
     return Promise.reject(error);
   }
 );
@@ -64,20 +87,28 @@ const createErrorObject = (message, statusCode, details = null) => ({
   details,
 });
 
-export const getPaginatedSongs = async (page = 1, limit = 10) => {
+export const getPaginatedSongs = async (page = 1, limit = 10, search = '', sortBy = 'title', sortOrder = 'asc') => {
   try {
-    console.log(`Calling API: ${API_URL}/songs?page=${page}&limit=${limit}`);
-    const response = await axios.get(`${API_URL}/songs?page=${page}&limit=${limit}`);
+    console.log(`Calling API: ${API_URL}/songs?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
+    const response = await api.get(`/songs`, {
+      params: {
+        page,
+        limit,
+        search,
+        sortBy,
+        sortOrder
+      }
+    });
     console.log('API response:', response.data);
     return response.data;
   } catch (error) {
     console.error('API error:', error);
     if (error.response) {
       console.error('Error response:', error.response.data);
-      throw new Error(`API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+      throw new Error(`Server error: ${error.response.status} - ${error.response.data.message || 'Unknown error'}`);
     } else if (error.request) {
       console.error('No response received:', error.request);
-      throw new Error('No response received from the server');
+      throw new Error('Network error: Unable to reach the server. Please check your internet connection and try again.');
     } else {
       console.error('Error setting up request:', error.message);
       throw new Error(`Request setup error: ${error.message}`);
@@ -85,20 +116,32 @@ export const getPaginatedSongs = async (page = 1, limit = 10) => {
   }
 };
 
+const reorderPlaylistSongs = async (playlistId, songIds) => {
+  try {
+    console.log('Reordering playlist songs:', { playlistId, songIds });
+    const response = await api.put(`/playlists/${playlistId}/reorder`, { songIds });
+    console.log('Reorder response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error reordering playlist songs:', error);
+    throw error.response ? error.response.data : error;
+  }
+};
+
 const apiService = {
   getPaginatedSongs,
-  setAuthToken: (token) => {
-    if (token) {
-      const fullToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-      localStorage.setItem('userToken', fullToken);
-      api.defaults.headers.common['Authorization'] = fullToken;
-      // Debug: Log token set
-      console.log('Auth token set');
+  
+  setAuthToken: (accessToken, refreshToken) => {
+    if (accessToken && refreshToken) {
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+      console.log('Auth tokens set');
     } else {
-      localStorage.removeItem('userToken');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       delete api.defaults.headers.common['Authorization'];
-      // Debug: Log token removal
-      console.log('Auth token removed');
+      console.log('Auth tokens removed');
     }
   },
 
@@ -107,9 +150,10 @@ const apiService = {
       console.log('Attempting registration with data:', userData);
       const response = await api.post('/auth/register', userData);
       console.log('Registration successful:', response.data);
-      if (!response.data.token) {
+      if (!response.data.accessToken || !response.data.refreshToken) {
         throw new Error('No token received from server');
       }
+      apiService.setAuthToken(response.data.accessToken, response.data.refreshToken);
       return response.data;
     } catch (error) {
       console.error('Registration failed:', error);
@@ -131,25 +175,46 @@ const apiService = {
   },
   
   login: async (email, password) => {
-    try {
-      // Debug: Log login attempt
-      console.log('Attempting login for email:', email);
-      const response = await api.post('/auth/login', { email, password });
-      if (response.data.token) {
-        apiService.setAuthToken(response.data.token);
-        // Debug: Log successful login
-        console.log('Login successful');
-      }
-      return response.data;
-    } catch (error) {
-      // Debug: Log login error
-      console.error('Login failed:', error);
-      throw createErrorObject(
-        'Failed to Login. Please try again.',
-        error.response?.status,
-        error.response?.data
-      );
-    }
+    console.log('apiService: login function called');
+    console.log(`apiService: Attempting to reach ${API_URL}/auth/login`);
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        console.log('apiService: Login request timed out');
+        reject(new Error('Login request timed out'));
+      }, 10000); // 10 seconds timeout
+  
+      api.post('/auth/login', { email, password })
+        .then(response => {
+          clearTimeout(timeoutId);
+          console.log('apiService: Received response:', response);
+          if (response.data.accessToken && response.data.refreshToken) {
+            apiService.setAuthToken(response.data.accessToken, response.data.refreshToken);
+            console.log('apiService: Login successful');
+            resolve(response.data);
+          } else {
+            console.log('apiService: Login failed - no tokens in response');
+            reject(new Error('Login response did not contain expected tokens'));
+          }
+        })
+        .catch(error => {
+          clearTimeout(timeoutId);
+          console.error('apiService: Login failed:', error);
+          if (error.response) {
+            console.log('apiService: Server responded with error:', error.response.data);
+            reject(createErrorObject(
+              error.response.data.message || 'Invalid credentials',
+              error.response.status,
+              error.response.data
+            ));
+          } else if (error.request) {
+            console.log('apiService: No response received from server');
+            reject(createErrorObject('No response from server. Please try again.', 500));
+          } else {
+            console.log('apiService: Request setup error:', error.message);
+            reject(createErrorObject(error.message || 'Error setting up request. Please try again.', 500));
+          }
+        });
+    });
   },
 
   getUserData: async () => {
@@ -172,9 +237,8 @@ const apiService = {
   },
 
   logout: () => {
-    // Debug: Log logout
     console.log('Logging out user');
-    apiService.setAuthToken(null);
+    apiService.setAuthToken(null, null);
   },
 
   //method to check if the token is present and valid
@@ -187,7 +251,6 @@ const apiService = {
   getToken: () => {
     return localStorage.getItem('userToken');
   },
-  // Add more API methods here as needed
 
   // Playlist methods
   createPlaylist: async (playlistData) => {
@@ -221,6 +284,7 @@ const apiService = {
   getPlaylist: async (playlistId) => {
     try {
       const response = await api.get(`/playlists/${playlistId}`);
+      console.log('API getPlaylist response:', JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error) {
       console.error('Failed to fetch playlist:', error);
@@ -254,6 +318,8 @@ const apiService = {
       );
     }
   },
+
+  reorderPlaylistSongs,
 
   deletePlaylist: async (playlistId) => {
     try {
@@ -301,11 +367,17 @@ const apiService = {
   addSongToPlaylist: async (playlistId, songId) => {
     try {
       const response = await api.post(`/playlists/${playlistId}/songs`, { songId });
+      if (response.data.message === 'Song already in playlist') {
+        throw new Error('Song already exists in the playlist');
+      }
       return response.data;
     } catch (error) {
       console.error('Failed to add song to playlist:', error);
+      if (error.response && error.response.status === 400) {
+        throw new Error('Song already exists in the playlist');
+      }
       throw createErrorObject(
-        'Failed to add song to playlist. Please try again.',
+        error.message || 'Failed to add song to playlist. Please try again.',
         error.response?.status,
         error.response?.data
       );
@@ -314,7 +386,9 @@ const apiService = {
 
   removeSongFromPlaylist: async (playlistId, songId) => {
     try {
+      console.log(`Removing song ${songId} from playlist ${playlistId}`);
       const response = await api.delete(`/playlists/${playlistId}/songs/${songId}`);
+      console.log('Song removed successfully:', response.data);
       return response.data;
     } catch (error) {
       console.error('Failed to remove song from playlist:', error);
@@ -325,7 +399,6 @@ const apiService = {
       );
     }
   },
-};
-
+}; 
 
 export default apiService;

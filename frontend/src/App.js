@@ -12,11 +12,13 @@ import PlaylistDetail from './components/PlaylistDetail';
 import MusicPlayer from './components/MusicPlayer';
 import './styles/Playlist.css'
 import SongList from './components/SongList';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
   const [currentTrack, setCurrentTrack] = useState(null);
 
   return (
+  <ErrorBoundary>
     <AuthProvider>
       <Router>
         <div className="App">
@@ -41,6 +43,7 @@ function App() {
         </div>
       </Router>
     </AuthProvider>
+  </ErrorBoundary>
   );
 }
 

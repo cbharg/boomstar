@@ -1,23 +1,49 @@
 .song-container {
   margin: 20px;
+  font-family: Arial, sans-serif;
 }
 
 .song-header {
-  font-size: 24px;
+  font-size: 28px;
   margin-bottom: 20px;
+  color: #333;
 }
 
 .search-input {
-  width: 100%;
+  width: calc(100% - 22px);
   padding: 10px;
   margin-bottom: 20px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  font-size: 16px;
+}
+
+.search-sort-info {
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.search-sort-info p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #555;
 }
 
 .song-table {
   width: 100%;
   border-collapse: collapse;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.song-table th {
+  background-color: #f8f8f8;
+  padding: 12px;
+  text-align: left;
+  font-weight: bold;
+  color: #333;
+  border-bottom: 2px solid #ddd;
 }
 
 .sortable-header {
@@ -26,39 +52,98 @@
 }
 
 .sortable-header:hover {
-  background-color: #f5f5f5;
+  background-color: #e8e8e8;
 }
 
 .song-item {
   border-bottom: 1px solid #eee;
 }
 
+.song-item:last-child {
+  border-bottom: none;
+}
+
+.song-item td {
+  padding: 12px;
+}
+
 .song-title {
   font-weight: bold;
+  color: #333;
 }
 
 .song-artist {
   color: #666;
 }
 
-.play-button {
+.play-button, .add-button {
   background-color: #1db954;
   color: white;
   border: none;
-  padding: 5px 10px;
+  padding: 8px 12px;
   cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-right: 5px;
+  transition: background-color 0.3s ease;
 }
 
-.play-button:hover {
+.play-button:hover, .add-button:hover {
   background-color: #1ed760;
+}
+
+.add-button {
+  background-color: #3498db;
+}
+
+.add-button:hover {
+  background-color: #2980b9;
 }
 
 .empty-song-message {
   color: #666;
   font-style: italic;
+  text-align: center;
+  padding: 20px;
 }
 
 .now-playing {
   margin-top: 20px;
   font-style: italic;
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pagination button {
+  background-color: #f0f0f0;
+  border: none;
+  padding: 8px 12px;
+  margin: 0 5px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.pagination button:hover {
+  background-color: #e0e0e0;
+}
+
+.pagination button:disabled {
+  background-color: #d0d0d0;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  margin: 0 10px;
+  font-size: 14px;
+  color: #333;
 }

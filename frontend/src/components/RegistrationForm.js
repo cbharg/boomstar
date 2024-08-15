@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import apiService from '../services/api';
 import ErrorMessage from './ErrorMessage';
 import LoadingIndicator from './LoadingIndicator';
 import './RegistrationForm.css';
@@ -16,7 +15,7 @@ const RegistrationForm = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const { register } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -48,50 +47,20 @@ const RegistrationForm = () => {
     }
   
     try {
-      const response = await apiService.register({
+      const result = await register({
         username: formData.username,
         email: formData.email,
         password: formData.password
       });
       
-      if (response.token) {
-        // Store the token
-        localStorage.setItem('token', response.token);
-        
-        // If user data is included in the response, update the user state
-        if (response.user) {
-          setUser(response.user);
-        } else {
-          // If user data is not included, we might need to fetch it
-          const userData = await apiService.getUserData(response.token);
-          setUser(userData);
-        }
-        
+      if (result.success) {
         navigate('/dashboard');
       } else {
-        throw new Error('Registration successful, but no token received');
+        setError(result.error || 'Registration failed. Please try again.');
       }
     } catch (err) {
       console.error('Registration error:', err);
-      if (err.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        if (err.response.data && err.response.data.message) {
-          setError(err.response.data.message);
-        } else if (err.response.status === 400) {
-          setError('Invalid registration data. Please check your inputs and try again.');
-        } else if (err.response.status === 409) {
-          setError('Username or email already exists. Please choose a different one.');
-        } else {
-          setError(`Registration failed. Please try again.`);
-        }
-      } else if (err.request) {
-        // The request was made but no response was received
-        setError('No response from server. Please check your internet connection and try again.');
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        setError('Registration failed. Please try again.');
-      }
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }

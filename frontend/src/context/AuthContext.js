@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import apiService from '../services/api';
 
 export const AuthContext = createContext();
@@ -10,17 +10,23 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(() => {
     apiService.logout();
     setUser(null);
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
   }, []);
 
   const loadUser = useCallback(async () => {
-    if (apiService.isAuthenticated()) {
+    const accessToken = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (accessToken && refreshToken) {
       try {
         const userData = await apiService.getUserData();
         setUser(userData);
       } catch (error) {
         console.error('Failed to load user data:', error);
-        logout(); // Call logout if user data fetch fails
+        logout(); // Call logout if refresh fails
       }
+    } else {
+      setUser(null);
     }
     setLoading(false);
   }, [logout]);
@@ -30,48 +36,50 @@ export const AuthProvider = ({ children }) => {
   }, [loadUser]);
 
   const login = async (email, password) => {
-    try {
-      const data = await apiService.login(email, password);
-      setUser(data.user);
-      localStorage.setItem('token', data.token);
-      return { success: true };
-    } catch (error) {
-      console.error('Login failed:', error);
-      if (error.response) {
-        console.error('Error response:', error.response.data);
-        console.error('Error status:', error.response.status);
-      } else if (error.request) {
-        console.error('Error request:', error.request);
-      } else {
-        console.error('Error message:', error.message);
-      }
-      return { success: false, error: error.response?.data?.message || 'Login failed' };
-    }
+    console.log('AuthContext: login function called');
+    return new Promise((resolve) => {
+      const timeoutId = setTimeout(() => {
+        console.log('AuthContext: Login process timed out');
+        resolve({ success: false, error: 'Login process timed out' });
+      }, 15000); // 15 seconds timeout
+  
+      apiService.login(email, password)
+        .then(data => {
+          clearTimeout(timeoutId);
+          console.log('AuthContext: Received data from apiService.login:', data);
+          if (data.accessToken && data.refreshToken) {
+            setUser(data.user);
+            localStorage.setItem('accessToken', data.accessToken);
+            localStorage.setItem('refreshToken', data.refreshToken);
+            console.log('AuthContext: Login successful');
+            resolve({ success: true });
+          } else {
+            console.log('AuthContext: Login failed - no tokens in response');
+            resolve({ success: false, error: 'Login failed: Invalid response from server' });
+          }
+        })
+        .catch(error => {
+          clearTimeout(timeoutId);
+          console.error('AuthContext: Login failed:', error);
+          resolve({ success: false, error: error.message || 'Login failed' });
+        });
+    });
   };
 
-  const register = async (email, password) => {
+  const register = async (userData) => {
     try {
-      const data = await apiService.register(email, password);
+      const data = await apiService.register(userData);
       setUser(data.user);
-      localStorage.setItem('token', data.token);
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
       return { success: true };
     } catch (error) {
-      console.error('Registration failed:', error);
-      // More detailed error logging
-      if (error.response) {
-        console.error('Error response:', error.response.data);
-        console.error('Error status:', error.response.status);
-      } else if (error.request) {
-        console.error('Error request:', error.request);
-      } else {
-        console.error('Error message:', error.message);
-      }
-      return { success: false, error: error.response?.data?.message || 'Registration failed' };
+      return { success: false, error: error.message || 'Registration failed' };
     }
   };
 
   const isAuthenticated = useCallback(() => {
-    return apiService.isAuthenticated();
+    return !!localStorage.getItem('accessToken');
   }, []);
 
   const contextValue = {

@@ -1,6 +1,4 @@
 const mongoose = require('mongoose');
-// Remove this line if Song.js is not directly used in this file
-// const Song = require('./Song');
 
 const PlaylistSchema = new mongoose.Schema({
   name: {
@@ -15,7 +13,7 @@ const PlaylistSchema = new mongoose.Schema({
   },
   songs: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Song'
+    ref: 'Song',
   }],
   description: {
     type: String,
@@ -23,8 +21,8 @@ const PlaylistSchema = new mongoose.Schema({
   }
 }, { timestamps: true }); // This replaces createdAt and updatedAt fields
 
-// Add pre-find hooks to automatically populate songs
-PlaylistSchema.pre('findOne', function(next) {
+// Add pre-find hooks to automatically populate songs has been removed for now.
+/*PlaylistSchema.pre('findOne', function(next) {
   this.populate('songs');
   next();
 });
@@ -32,6 +30,6 @@ PlaylistSchema.pre('findOne', function(next) {
 PlaylistSchema.pre('find', function(next) {
   this.populate('songs');
   next();
-});
+});*/
 
 module.exports = mongoose.model('Playlist', PlaylistSchema);

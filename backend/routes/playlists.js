@@ -61,7 +61,8 @@ router.get('/:id', protect, [
   }
   try {
     console.log(`Fetching playlist ${req.params.id}`);
-    const playlist = await Playlist.findById(req.params.id);
+    const playlist = await Playlist.findById(req.params.id).populate('songs');
+    console.log('Fetched playlist:', JSON.stringify(playlist, null, 2));
     if (!playlist) {
       console.log(`Playlist ${req.params.id} not found`);
       return res.status(404).json({ msg: 'Playlist not found' });
@@ -211,7 +212,21 @@ router.delete('/:id/songs/:songId', protect, [
       return res.status(404).json({ message: 'Playlist not found' });
     }
     
-    playlist.songs = playlist.songs.filter(song => song.toString() !== req.params.songId);
+    // Check if the user is authorized to modify this playlist
+    if (playlist.user.toString() !== req.user.id) {
+      console.log(`User ${req.user.id} not authorized to modify playlist ${req.params.id}`);
+      return res.status(401).json({ message: 'Not authorized to modify this playlist' });
+    }
+    console.log('Playlist songs before removal:', playlist.songs);
+    const songObjectId = mongoose.Types.ObjectId(req.params.songId);
+    const songIndex = playlist.songs.findIndex(songId => songId.equals(songObjectId));
+    console.log('Song index:', songIndex);
+    if (songIndex === -1) {
+      console.log(`Song ${req.params.songId} not found in playlist ${req.params.id}`);
+      return res.status(404).json({ message: 'Song not found in playlist' });
+    }
+
+    playlist.songs.splice(songIndex, 1);
     await playlist.save();
     
     console.log(`Song ${req.params.songId} successfully removed from playlist ${req.params.id}`);
@@ -220,6 +235,7 @@ router.delete('/:id/songs/:songId', protect, [
     console.error(`Error removing song from playlist ${req.params.id}:`, err);
     res.status(500).json({msg: 'Server Error', error: err.message});
   }
+  console.log('Playlist songs after removal:', playlist.songs);
 });
 
 module.exports = router;
