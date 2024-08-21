@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
 import ErrorMessage from './ErrorMessage';
 import LoadingIndicator from './LoadingIndicator';
-import SongList from './SongList';
 import PlaylistDetailErrorBoundary from './PlaylistDetailErrorBoundary';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import PlaylistSongManager from './PlaylistSongManager';
 
 const PlaylistDetail = ({ setCurrentTrack }) => {
   const [playlist, setPlaylist] = useState(null);
@@ -18,23 +18,24 @@ const PlaylistDetail = ({ setCurrentTrack }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [removingSongId, setRemovingSongId] = useState(null);
   const [showAddSongs, setShowAddSongs] = useState(false);
-  const [addedSongIds, setAddedSongIds] = useState(new Set(playlist?.songs.map(song => song._id) || []));
+  const [addedSongIds, setAddedSongIds] = useState(new Set());
   const { id } = useParams();
   const navigate = useNavigate();
 
   
   const fetchPlaylist = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
       const data = await apiService.getPlaylist(id);
       console.log("Fetched playlist data:", JSON.stringify(data, null, 2));
-      console.log("Songs in playlist:", data.songs);
       setPlaylist(data);
       setEditedName(data.name);
       setEditedDescription(data.description);
+      setAddedSongIds(new Set(data.songs.map(song => song._id)));
     } catch (err) {
       console.error("Error fetching playlist:", err);
       if (err.response && err.response.status === 401) {
-        // Token expired, redirect to login
         navigate('/login');
       } else {
         setError('Failed to fetch playlist. Please try again.');
@@ -86,25 +87,14 @@ const PlaylistDetail = ({ setCurrentTrack }) => {
     }
   };
 
-  const handleAddSong = async (song) => {
-    try {
-      if (!addedSongIds.has(song._id)) {
-        await apiService.addSongToPlaylist(id, song._id);
-        setAddedSongIds(prev => new Set(prev).add(song._id));
-        await fetchPlaylist();
-      } else {
-        setError('Song already exists in the playlist.');
-      }
-    } catch (err) {
-      console.error("Error adding song to playlist:", err);
-      setError('Failed to add song to playlist. Please try again.');
-    }
-  };
+  const handleSongsUpdate = useCallback((playlistSongs) => {
+    setPlaylist(prevPlaylist => ({ ...prevPlaylist, songs: playlistSongs }));
+    setAddedSongIds(new Set(playlistSongs.map(song => song._id)));
+  }, []);
 
   const handleRemoveSong = async (songId) => {
     setRemovingSongId(songId);
     try {
-      console.log(`Removing song ${songId}`);
       await apiService.removeSongFromPlaylist(id, songId);
       setPlaylist(prevPlaylist => ({
         ...prevPlaylist,
@@ -115,9 +105,6 @@ const PlaylistDetail = ({ setCurrentTrack }) => {
         newSet.delete(songId);
         return newSet;
       });
-      //update localStorage
-      const storedSongs = JSON.parse(localStorage.getItem(`addedSongs_${id}`) || '[]');
-      localStorage.setItem(`addedSongs_${id}`, JSON.stringify(storedSongs.filter(id => id !== songId)));
     } catch (err) {
       console.error("Error removing song from playlist:", err);
       setError('Failed to remove song from playlist. Please try again.');
@@ -137,11 +124,10 @@ const PlaylistDetail = ({ setCurrentTrack }) => {
 
     try {
       await apiService.reorderPlaylistSongs(id, items.map(song => song._id));
-      await fetchPlaylist(); // Fetch the updated playlist from the server
     } catch (err) {
       console.error("Error reordering songs:", err);
       setError('Failed to update song order. Please try again.');
-      await fetchPlaylist(); // Fetch the original playlist order from the server
+      await fetchPlaylist();
     }
   };
 
@@ -176,49 +162,53 @@ const PlaylistDetail = ({ setCurrentTrack }) => {
             </button>
           </form>
         )}
-        <h3>Songs in Playlist:</h3>
+        <h3 className="playlist-header">Songs in Playlist:</h3>
         {playlist.songs.length === 0 ? (
-          <p>No songs in this playlist yet.</p>
+          <p className="empty-playlist-message">No songs in this playlist yet.</p>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="playlist">
               {(provided) => (
-                <ul {...provided.droppableProps} ref={provided.innerRef}>
+                <ul className="playlist-list" {...provided.droppableProps} ref={provided.innerRef}>
                   {playlist.songs.map((song, index) => (
                     <Draggable key={`${song._id}-${index}`} draggableId={`${song._id}-${index}`} index={index}>
-                    {(provided) => (
-                      <li
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                      >
-                        {song.title ? `${song.title} - ${song.artist}` : `Loading... (ID: ${song})`}
-                        <button onClick={() => handleSongPlay(song)}>Play</button>
-                        <button 
-                          onClick={() => handleRemoveSong(song._id || song)}
-                          disabled={removingSongId === (song._id || song)}
-                        >     
-                          {removingSongId === (song._id || song) ? 'Removing...' : 'Remove'}
-                        </button>
-                      </li>
-                    )}
-                  </Draggable>
-                ))}
+                      {(provided) => (
+                        <li
+                          className="playlist-item"
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                        >
+                          {song.title ? `${song.title} - ${song.artist}` : `Loading... (ID: ${song._id})`}
+                          <button className="play-button" onClick={() => handleSongPlay(song)}>Play</button>
+                          <button 
+                            className="add-button"
+                            onClick={() => handleRemoveSong(song._id)}
+                            disabled={removingSongId === song._id}
+                          >     
+                            {removingSongId === song._id ? 'Removing...' : 'Remove'}
+                          </button>
+                        </li>
+                      )}
+                    </Draggable>
+                  ))}
                   {provided.placeholder}
                 </ul>
               )}
             </Droppable>
           </DragDropContext>
         )}
-        <button onClick={() => setShowAddSongs(!showAddSongs)}>
+        <button onClick={() => {
+          console.log('Toggling showAddSongs');
+          setShowAddSongs(!showAddSongs);
+        }}>  
           {showAddSongs ? 'Hide Song List' : 'Add Songs'}
         </button>
         {showAddSongs && (
-          <SongList
-            setCurrentTrack={setCurrentTrack}
-            onSongSelect={handleAddSong}
-            excludeSongs={Array.from(addedSongIds)}
-            playlistId={id}
+          <PlaylistSongManager
+          playlistId={id}
+          onSongsUpdate={handleSongsUpdate}
+          addedSongIds={addedSongIds}
           />
         )}
         <button onClick={handleDelete} disabled={isDeleting || isEditing}>

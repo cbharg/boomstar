@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { protect } = require('../middleware/authMiddleware');
 const Playlist = require('../models/Playlist');
 const { check, validationResult } = require('express-validator');
@@ -218,7 +219,7 @@ router.delete('/:id/songs/:songId', protect, [
       return res.status(401).json({ message: 'Not authorized to modify this playlist' });
     }
     console.log('Playlist songs before removal:', playlist.songs);
-    const songObjectId = mongoose.Types.ObjectId(req.params.songId);
+    const songObjectId = mongoose.Types.ObjectId.createFromHexString(req.params.songId);
     const songIndex = playlist.songs.findIndex(songId => songId.equals(songObjectId));
     console.log('Song index:', songIndex);
     if (songIndex === -1) {
@@ -228,14 +229,23 @@ router.delete('/:id/songs/:songId', protect, [
 
     playlist.songs.splice(songIndex, 1);
     await playlist.save();
+
+    // Refetch the updated playlist
+    const updatedPlaylist = await Playlist.findById(req.params.id);
     
     console.log(`Song ${req.params.songId} successfully removed from playlist ${req.params.id}`);
-    res.json(playlist);
+    console.log('Playlist songs after removal:', updatedPlaylist.songs);
+    res.json(updatedPlaylist);
   } catch (err) {
     console.error(`Error removing song from playlist ${req.params.id}:`, err);
-    res.status(500).json({msg: 'Server Error', error: err.message});
+    if (err instanceof TypeError && err.message.includes('ObjectId')) {
+      return res.status(400).json({ message: 'Invalid song ID format', error: err.message });
+    }
+    if (err instanceof mongoose.Error.CastError) {
+      return res.status(400).json({ message: 'Invalid playlist or song ID', error: err.message });
+    }
+    res.status(500).json({message: 'Server Error', error: err.message, stack: err.stack});
   }
-  console.log('Playlist songs after removal:', playlist.songs);
 });
 
 module.exports = router;

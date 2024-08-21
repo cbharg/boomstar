@@ -3,7 +3,7 @@
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api'; // Adjust this URL to match your backend
-
+console.log('api.js loaded');
 const api = axios.create({
   baseURL: API_URL,
 });
@@ -350,17 +350,21 @@ const apiService = {
     }
   },
 
-  getAllSongs: async () => {
+  getAllSongs: async (page = 1, limit = 10) => {
     try {
-      const response = await api.get('/songs');
+      console.log(`Fetching songs: page ${page}, limit ${limit}`);
+      const response = await api.get('/songs', {
+        params: { page, limit }
+      });
+      console.log('getAllSongs response:', JSON.stringify(response.data, null, 2));
+      if (!response.data || !Array.isArray(response.data.songs)) {
+        console.error('getAllSongs: response.data.songs is not an array', response.data);
+        throw new Error('Invalid response format');
+      }
       return response.data;
     } catch (error) {
       console.error('Failed to fetch songs:', error);
-      throw createErrorObject(
-        'Failed to fetch songs. Please try again.',
-        error.response?.status,
-        error.response?.data
-      );
+      throw error; // Rethrow the error to be handled by the caller
     }
   },
 
@@ -398,7 +402,7 @@ const apiService = {
         error.response?.data
       );
     }
-  },
+  }
 }; 
 
 export default apiService;

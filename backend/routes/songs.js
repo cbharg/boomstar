@@ -11,14 +11,22 @@ const {
   deleteSongValidation
 } = require('../middleware/songValidation');
 
-// Get paginated songs
-router.get('/', getPaginatedSongs);
-
-// Get all songs
+//get all songs
 router.get('/', async (req, res) => {
   try {
-    const songs = await Song.find();
-    res.json(songs);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const songs = await Song.find().skip(skip).limit(limit);
+    const total = await Song.countDocuments();
+
+    res.json({
+      songs,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalSongs: total
+    });
   } catch (err) {
     console.error('Error fetching songs:', err);
     res.status(500).json({ message: 'Server Error', error: err.message });
